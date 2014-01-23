@@ -6,6 +6,7 @@ set -eo pipefail
 
 # for DEBUG; remove me.
 set -x
+export
 
 # Paths.
 BIN_DIR=$(cd $(dirname $0); pwd) # absolute path
