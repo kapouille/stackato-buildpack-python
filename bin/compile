@@ -5,7 +5,7 @@
 set -eo pipefail
 
 # for DEBUG; remove me.
-# set -x
+set -x
 
 # Paths.
 BIN_DIR=$(cd $(dirname $0); pwd) # absolute path
@@ -59,7 +59,7 @@ fi
 
 if [[ -f requirements.txt ]]; then
 	puts-step "Installing requirements via pip"
-	$APYBIN/pip install --user --use-mirrors -r requirements.txt | cleanup_pip | indent
+	$APYBIN/pip install $PIP_OPTS --user --use-mirrors -r requirements.txt | cleanup_pip | indent
 fi
 
 puts-step "Building runtime environment"
