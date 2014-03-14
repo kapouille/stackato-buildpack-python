@@ -23,6 +23,8 @@ def run(exe, *args, **kwargs):
         command.append("--" + option.replace("_", "-"))
         command.append(value)
 
+    print_step("Running {}".format(command))
+
     process = Popen(command,
                     shell=True,
                     stdout=PIPE,
