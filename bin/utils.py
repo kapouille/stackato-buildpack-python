@@ -34,9 +34,9 @@ def run(exe, *args, **kwargs):
     while True:
         out, err = process.communicate()
         if out:
-            print_indent(out.split("\n"))
+            print_indent(*out.split("\n"))
         if err:
-            print_warning(err.split("\n"))
+            print_warning(*err.split("\n"))
 
         if process.returncode:
             return process.returncode
