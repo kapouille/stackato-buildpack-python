@@ -1,4 +1,4 @@
-from subprocess import check_call
+from subprocess import Popen, PIPE
 
 
 def print_indent(*lines):
@@ -16,17 +16,6 @@ def print_warning(*lines):
     print_indent(*(lines[1:]))
 
 
-class Stream(object):
-    def __init__(self, display_fun):
-        self._display_fun = display_fun
-
-    def fileno(self):
-        return None
-
-    def write(self, what):
-        self._display_fun(*what.split("\n"))
-
-
 def run(exe, *args, **kwargs):
     command = [exe]
     command.extend([arg.split() for arg in args])
@@ -34,7 +23,18 @@ def run(exe, *args, **kwargs):
         command.append("--" + option.replace("_", "-"))
         command.append(value)
 
-    return check_call(command,
-                      shell=True,
-                      stdout=Stream(print_indent),
-                      stderr=Stream(print_warning))
+    process = Popen(command,
+                    shell=True,
+                    stdout=PIPE,
+                    stderr=PIPE)
+
+    while True:
+        out, err = process.communicate()
+        if out:
+            print_indent(out.split("\n"))
+        if err:
+            print_warning(err.split("\n"))
+
+        if process.returncode:
+            return process.returncode
+
