@@ -18,7 +18,8 @@ def print_warning(*lines):
 
 def run(exe, *args, **kwargs):
     command = [exe]
-    command.extend([arg.split() for arg in args])
+    for arg in args:
+        command.extend(arg.split())
     for option, value in kwargs.items():
         command.append("--" + option.replace("_", "-"))
         command.append(value)
