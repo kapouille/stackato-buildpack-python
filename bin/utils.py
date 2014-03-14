@@ -31,13 +31,11 @@ def run(exe, *args, **kwargs):
                     stdout=PIPE,
                     stderr=PIPE)
 
-    while True:
-        out, err = process.communicate()
-        if out:
-            print_indent(*out.split("\n"))
-        if err:
-            print_warning(*err.split("\n"))
+    out, err = process.communicate()
+    if out:
+        print_indent(*out.split("\n"))
+    if err:
+        print_warning(*err.split("\n"))
 
-        if process.returncode:
-            return process.returncode
+    return process.returncode
 
