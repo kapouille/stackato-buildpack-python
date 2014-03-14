@@ -57,7 +57,7 @@ def get_python(build_dir):
     return "/opt/ActivePython-{}/bin".format(python_version), python_version
 
 
-def install_requirements(executable, requirements, options):
+def install_requirements(executable, requirements, options, cache_dir):
     version = check_output(
         "{} --version".format(executable),
         shell=True)
@@ -66,33 +66,37 @@ def install_requirements(executable, requirements, options):
     if options:
         print_indent("Using options: " + options)
     check_call(
-        "{} install {} -r {}".format(
+        "{} install {} --download-cache {} -r {}".format(
             executable,
             options,
+            cache_dir,
             requirements),
         shell=True)
 
 
-def install_application(build_dir, python_dir):
+def install_application(build_dir, cache_dir, python_dir):
     try:
         if exists(join(build_dir, "setup.py")):
             print_step("Installing application package")
 
             check_call(
-                [join(python_dir, "python"),
-                 "setup.py"],
-                shell=True,
-                cwd=build_dir)
+                [join(python_dir, "pip"),
+                 "install",
+                 "--download-cache", cache_dir,
+                 "-e", build_dir],
+                shell=True)
         else:
             if exists(join(build_dir, "requirements.pypm")):
                 install_requirements(join(python_dir, "pypm"),
                                      "requirements.pypm",
-                                     environ.get('PYPM_OPTS', ''))
+                                     environ.get('PYPM_OPTS', ''),
+                                     cache_dir)
 
             if exists(join(build_dir, "requirements.txt")):
                 install_requirements(join(python_dir, "pip"),
                                      "requirements.txt",
-                                     environ.get('PIP_OPTS', ''))
+                                     environ.get('PIP_OPTS', ''),
+                                     cache_dir)
     except CalledProcessError as error:
         print_warning("The installation failed:",
                       str(error))
@@ -116,11 +120,11 @@ def build_runtime_environment(build_dir, python_dir, python_version):
 
 def main():
     build_dir = sys.argv[1]
-    #TODO: cache_dir = sys.argv[2]
+    cache_dir = sys.argv[2]
 
     python_dir, python_version = get_python(build_dir)
 
-    install_application(build_dir, python_dir)
+    install_application(build_dir, cache_dir, python_dir)
 
     build_runtime_environment(build_dir, python_dir, python_version)
 
