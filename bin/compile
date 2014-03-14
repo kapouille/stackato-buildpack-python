@@ -125,6 +125,7 @@ def build_runtime_environment(build_dir, python_dir, python_version):
 
 
 def main():
+    print_step("Gathering parameters")
     build_dir = sys.argv[1]
     cache_dir = sys.argv[2]
 
