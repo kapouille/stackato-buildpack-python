@@ -79,12 +79,13 @@ def install_application(build_dir, cache_dir, python_dir):
         if exists(join(build_dir, "setup.py")):
             print_step("Installing application package")
 
-            check_call(
-                [join(python_dir, "pip"),
-                 "install",
-                 "--download-cache", cache_dir,
-                 "-e", build_dir],
-                shell=True)
+            command = [join(python_dir, "pip"),
+                       "install",
+                       "--download-cache", cache_dir,
+                       "-e", build_dir]
+
+            print_indent(str(command))
+            check_call(command, shell=True)
         else:
             if exists(join(build_dir, "requirements.pypm")):
                 install_requirements(join(python_dir, "pypm"),
