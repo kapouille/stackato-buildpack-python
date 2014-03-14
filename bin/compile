@@ -8,7 +8,7 @@ from utils import *
 
 
 def get_python(build_dir):
-    python_version = environ('PYTHON_VERSION', '2.7')
+    python_version = environ.get('PYTHON_VERSION', '2.7')
 
     runtime_file_path = join(build_dir, 'runtime.txt')
     if exists(runtime_file_path):
@@ -63,6 +63,8 @@ def install_requirements(executable, requirements, options):
         shell=True)
     version = version[:version.find('\n')]
     print_step("Installing requirements via " + version)
+    if options:
+        print_indent("Using options: " + options)
     check_call(
         "{} install {} -r {}".format(
             executable,
@@ -85,12 +87,12 @@ def install_application(build_dir, python_dir):
             if exists(join(build_dir, "requirements.pypm")):
                 install_requirements(join(python_dir, "pypm"),
                                      "requirements.pypm",
-                                     environ('PYPM_OPTS', ''))
+                                     environ.get('PYPM_OPTS', ''))
 
             if exists(join(build_dir, "requirements.txt")):
                 install_requirements(join(python_dir, "pip"),
                                      "requirements.txt",
-                                     environ('PIP_OPTS', ''))
+                                     environ.get('PIP_OPTS', ''))
     except CalledProcessError as error:
         print_warning("The installation failed",
                       str(error))
