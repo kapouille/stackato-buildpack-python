@@ -1,68 +1,126 @@
-#!/usr/bin/env bash
-# -*- bash -*-
+#!/usr/bin/env python
+import sys
+from os import environ, mkdir
+from os.path import exists, join
+from subprocess import check_output, CalledProcessError, check_call
+import re
+from utils import *
 
-# Fail fast and fail hard.
-set -eo pipefail
 
-# for DEBUG; remove me.
-set -x
-export
+def get_python(build_dir):
+    python_version = environ('PYTHON_VERSION', '2.7')
 
-# Paths.
-BIN_DIR=$(cd $(dirname $0); pwd) # absolute path
-ROOT_DIR=$(dirname $BIN_DIR)
-BUILD_DIR=$1
-CACHE_DIR=$2
-PYTHON_VERSION=${PYTHON_VERSION:-2.7}
+    runtime_file_path = join(build_dir, 'runtime.txt')
+    if exists(runtime_file_path):
+        python_version_full = open(runtime_file_path).read().strip()
 
-source $BIN_DIR/utils
+        match = re.search(r'python-([0-9]\.[0-9])(\.[0-9])*',
+                          python_version_full)
+        if match:
+            python_version = match.group(1)
+        else:
+            print_warning("Runtime version {} "
+                          "not supported".format(python_version_full))
 
-cd $BUILD_DIR
+        if python_version_full != python_version:
+            command = [
+                "/opt/ActivePython-{version}"
+                "/bin/python{version}".format(version=python_version),
+                "-c",
+                'import sys; '
+                'print('
+                '"{0.major}.{0.minor}.{0.micro}"'
+                '.format(sys.version_info))'
+            ]
+            try:
+                actual_version = check_output(command, shell=True).strip()
+            except CalledProcessError as error:
+                print_warning(
+                    "Could not check installed python "
+                    "version " + python_version_full,
+                    str(error))
+                sys.exit(2)
 
-if [[ -f runtime.txt ]]; then
-	# parse something like python-3.2.1 into 3.2
-	PYTHON_VERSION_FULL=$(cat runtime.txt | sed -n 's/python\-\([0-9\.]*\)/\1/p')
-	PYTHON_VERSION=`echo $PYTHON_VERSION_FULL | sed -n 's/\([0-9]\.[0-9]\)\(\.[0-9]\)*/\1/p'`
+            if actual_version != python_version_full:
+                print_warning(
+                    "Requested Python version {} "
+                    "did not match the installed "
+                    "version {}".format(python_version_full, actual_version))
+                sys.exit(2)
 
-	if [[ ! -e /opt/ActivePython-$PYTHON_VERSION ]]; then
-		puts-warn "ActivePython-$PYTHON_VERSION is not installed"
-		exit 2
-	fi
+    if not exists("/opt/ActivePython-" + python_version):
+        print_warning("ActivePython-python_version is not installed")
+        sys.exit(2)
 
-	# ensure that we do in fact have PYTHON_VERSION_FULL installed
-	if [ "$PYTHON_VERSION_FULL" != "$PYTHON_VERSION" ]; then
-		actual_version=`/opt/ActivePython-$PYTHON_VERSION/bin/python$PYTHON_VERSION -c 'import sys; print("{0.major}.{0.minor}.{0.micro}".format(sys.version_info))'`
-		if [ "$PYTHON_VERSION_FULL" != "$actual_version" ]; then
-			puts-warn "Requested Python version ($PYTHON_VERSION_FULL) did not match the installed version ($actual_version)"
-			exit 2
-		fi
-	fi
-else
-	if [[ ! -e /opt/ActivePython-$PYTHON_VERSION ]]; then
-		puts-warn "ActivePython-$PYTHON_VERSION is not installed"
-		exit 2
-	fi
-fi
+    print_step("Using Python-{} (ActivePython)".format(python_version))
 
-APYBIN=/opt/ActivePython-$PYTHON_VERSION/bin
+    return "/opt/ActivePython-{}/bin".format(python_version), python_version
 
-puts-step "Using Python-$PYTHON_VERSION (ActivePython)"
 
-export PATH=$APYBIN:$PATH
-# Use /app-based for relocation during runtime.
-export PYTHONUSERBASE=/app/.python
-export PYTHONUNBUFFERED=True
+def install_requirements(executable, requirements, options):
+    version = check_output(
+        "{} --version".format(executable),
+        shell=True)
+    version = version[:version.find('\n')]
+    print_step("Installing requirements via " + version)
+    check_call(
+        "{} install {} -r {}".format(
+            executable,
+            options,
+            requirements),
+        shell=True)
 
-if [[ -f requirements.pypm ]]; then
-	puts-step "Installing requirements via PyPM"
-	$APYBIN/pypm install -r requirements.pypm | indent
-fi
 
-if [[ -f requirements.txt ]]; then
-	puts-step "Installing requirements via pip"
-	$APYBIN/pip install $PIP_OPTS --user --use-mirrors -r requirements.txt | cleanup_pip | indent
-fi
+def install_application(build_dir, python_dir):
+    try:
+        if exists(join(build_dir, "setup.py")):
+            print_step("Installing application package")
 
-puts-step "Building runtime environment"
-mkdir -p $BUILD_DIR/.profile.d
-echo "export PYTHON_VERSION=$PYTHON_VERSION; PATH=\"$PYTHONUSERBASE/bin:$APYBIN:\$PATH\"; export PYTHONUSERBASE=$PYTHONUSERBASE; export PYTHONUNBUFFERED=True" > $BUILD_DIR/.profile.d/python.sh
+            check_call(
+                [join(python_dir, "python"),
+                 "setup.py"],
+                shell=True,
+                cwd=build_dir)
+        else:
+            if exists(join(build_dir, "requirements.pypm")):
+                install_requirements(join(python_dir, "pypm"),
+                                     "requirements.pypm",
+                                     environ('PYPM_OPTS', ''))
+
+            if exists(join(build_dir, "requirements.txt")):
+                install_requirements(join(python_dir, "pip"),
+                                     "requirements.txt",
+                                     environ('PIP_OPTS', ''))
+    except CalledProcessError as error:
+        print_warning("The installation failed",
+                      str(error))
+        print_indent(*error.output.split("\n"))
+        sys.exit(2)
+
+
+def build_runtime_environment(build_dir, python_dir, python_version):
+    print_step("Building runtime environment")
+    profile_d_dirname = join(build_dir, ".profile.d")
+    mkdir(profile_d_dirname)
+    with open(join(profile_d_dirname, "python.sh")) as f:
+        python_user_base = "/app/.python"
+        f.write("export PYTHON_VERSION={}\n".format(python_version))
+        f.write('PATH="{}/bin:{}:$PATH"\n'.format(python_user_base,
+                                                     python_dir))
+        f.write("export PYTHONUSERBASE={}\n".format(python_user_base))
+        f.write("export PYTHONUNBUFFERED=True\n")
+
+
+def main():
+    build_dir = sys.argv[1]
+    #TODO: cache_dir = sys.argv[2]
+
+    python_dir, python_version = get_python(build_dir)
+
+    install_application(build_dir, python_dir)
+
+    build_runtime_environment(build_dir, python_dir, python_version)
+
+
+if __name__ == "__main__":
+    main()

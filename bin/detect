@@ -1,11 +1,27 @@
-#!/usr/bin/env bash
-# -*- sh -*-
+#!/usr/bin/env python
+import sys
+from os.path import exists, join
 
-BUILD_DIR=$1
 
-# Exit early if app is clearly not Python.
-if [ ! -f $BUILD_DIR/requirements.txt ] && [ ! -f $BUILD_DIR/requirements.pypm ]; then
-  exit 1
-fi
+def main():
+    build_dir = sys.argv[1]
+    runtime_file_path = join(build_dir, 'runtime.txt')
 
-echo Python
+    recognised_files = [
+        "setup.py",
+        "requirements.pypm",
+        "requirements.txt"
+    ]
+
+    if any([exists(join(build_dir, file_name))
+            for file_name in recognised_files]):
+        print "Python"
+    elif exists(runtime_file_path):
+        python_version_full = open(runtime_file_path).read().strip()
+        if python_version_full.startswith("Python"):
+            print "Python"
+
+    sys.exit(1)
+
+if __name__ == "__main__":
+    main()
