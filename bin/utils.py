@@ -1,6 +1,6 @@
 def print_indent(*lines):
     for line in lines:
-        print "      {}".format(line)
+        print "       {}".format(line)
 
 
 def print_step(*lines):

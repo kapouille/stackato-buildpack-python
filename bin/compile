@@ -94,9 +94,10 @@ def install_application(build_dir, python_dir):
                                      "requirements.txt",
                                      environ.get('PIP_OPTS', ''))
     except CalledProcessError as error:
-        print_warning("The installation failed",
+        print_warning("The installation failed:",
                       str(error))
-        print_indent(*error.output.split("\n"))
+        if error.output:
+            print_indent(*error.output.split("\n"))
         sys.exit(2)
 
 
