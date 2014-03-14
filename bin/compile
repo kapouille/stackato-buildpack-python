@@ -57,12 +57,15 @@ def get_python(build_dir):
     return "/opt/ActivePython-{}/bin".format(python_version), python_version
 
 
-def install_requirements(executable, requirements, options, cache_dir):
+def pip_pypm_version(executable):
     version = check_output(
         "{} --version".format(executable),
         shell=True)
-    version = version[:version.find('\n')]
-    print_step("Installing requirements via " + version)
+    return version[:version.find('\n')]
+
+
+def install_requirements(executable, requirements, options, cache_dir):
+    print_step("Installing requirements via " + pip_pypm_version(executable))
     if options:
         print_indent("Using options: " + options)
     check_call(
@@ -77,9 +80,11 @@ def install_requirements(executable, requirements, options, cache_dir):
 def install_application(build_dir, cache_dir, python_dir):
     try:
         if exists(join(build_dir, "setup.py")):
-            print_step("Installing application package")
+            pip = join(python_dir, "pip")
+            print_step(
+                "Installing application package via " + pip_pypm_version(pip))
 
-            command = [join(python_dir, "pip"),
+            command = [pip,
                        "install",
                        "--download-cache", cache_dir,
                        "-e", build_dir]
@@ -110,7 +115,7 @@ def build_runtime_environment(build_dir, python_dir, python_version):
     print_step("Building runtime environment")
     profile_d_dirname = join(build_dir, ".profile.d")
     mkdir(profile_d_dirname)
-    with open(join(profile_d_dirname, "python.sh")) as f:
+    with open(join(profile_d_dirname, "python.sh"), "w+") as f:
         python_user_base = "/app/.python"
         f.write("export PYTHON_VERSION={}\n".format(python_version))
         f.write('PATH="{}/bin:{}:$PATH"\n'.format(python_user_base,
