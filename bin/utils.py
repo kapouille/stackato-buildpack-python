@@ -19,6 +19,7 @@ def print_warning(*lines):
 class Stream(object):
     def __init__(self, display_fun):
         self._display_fun = display_fun
+        self.fileno = None
 
     def write(self, what):
         self._display_fun(*what.split("\n"))
