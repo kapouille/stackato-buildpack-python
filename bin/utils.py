@@ -26,7 +26,7 @@ def run(exe, *args, **kwargs):
 
     print_step("Running {}".format(command))
 
-    process = Popen(command,
+    process = Popen(' '.join(command),
                     shell=True,
                     stdout=PIPE,
                     stderr=PIPE)
