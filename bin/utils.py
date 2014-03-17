@@ -1,4 +1,25 @@
 from subprocess import Popen, PIPE
+from threading import Thread
+
+
+class StreamLogger:
+
+    def _reader(self):
+        while True:
+            line = self._stream.readline()
+            if line:
+                self._formatter(line)
+            else:
+                return
+
+    def __init__(self, stream, formatter):
+        self._stream = stream
+        self._formatter = formatter
+        self._thread = Thread(target=self._reader)
+        self._thread.start()
+
+    def join(self):
+        self._thread.join()
 
 
 def print_indent(*lines):
@@ -30,11 +51,14 @@ def run(exe, *args, **kwargs):
                     stderr=PIPE,
                     **kwargs)
 
-    out, err = process.communicate()
-    if out:
-        print_indent(*out.split("\n"))
-    if err:
-        print_warning(*err.split("\n"))
+    loggers = [
+        StreamLogger(process.stdout, print_indent),
+        StreamLogger(process.stderr, print_warning),
+    ]
+
+    process.wait()
+    for logger in loggers:
+        logger.join()
 
     return process.returncode
 
