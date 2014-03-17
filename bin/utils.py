@@ -5,12 +5,8 @@ from threading import Thread
 class StreamLogger:
 
     def _reader(self):
-        while True:
-            line = self._stream.readline().strip()
-            if line:
-                self._formatter(line)
-            else:
-                return
+        for line in self._stream:
+            self._formatter(line.strip())
 
     def __init__(self, stream, formatter):
         self._stream = stream
