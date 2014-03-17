@@ -1,5 +1,6 @@
 from subprocess import Popen, PIPE
 from threading import Thread
+import sys
 
 
 class StreamLogger:
@@ -21,6 +22,7 @@ class StreamLogger:
 def print_indent(*lines):
     for line in lines:
         print "       {}".format(line)
+    sys.stdout.flush()
 
 
 def print_step(*lines):
@@ -38,8 +40,6 @@ def run(exe, *args, **kwargs):
         exe,
         ' '.join(args)
     )
-
-    print_step("Running " + command)
 
     process = Popen(command,
                     shell=True,
