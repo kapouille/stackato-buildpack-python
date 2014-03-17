@@ -7,7 +7,7 @@ class StreamLogger:
     def _reader(self):
         while True:
             line = self._stream.readline().strip()
-            if line is not None:
+            if line:
                 self._formatter(line)
             else:
                 return
