@@ -17,19 +17,18 @@ def print_warning(*lines):
 
 
 def run(exe, *args, **kwargs):
-    command = [exe]
-    for arg in args:
-        command.extend(arg.split())
-    for option, value in kwargs.items():
-        command.append("--" + option.replace("_", "-"))
-        command.append(value)
+    command = '{} {}'.format(
+        exe,
+        ' '.join(args)
+    )
 
-    print_step("Running {}".format(command))
+    print_step("Running " + command)
 
-    process = Popen(' '.join(command),
+    process = Popen(command,
                     shell=True,
                     stdout=PIPE,
-                    stderr=PIPE)
+                    stderr=PIPE,
+                    **kwargs)
 
     out, err = process.communicate()
     if out:

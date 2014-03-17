@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from copy import copy
 from utils import *
 import sys
 from os import environ, mkdir
@@ -64,38 +65,47 @@ def pip_pypm_version(executable):
     return version[:version.find('\n')]
 
 
-def install_requirements(executable, requirements, options, cache_dir):
+def install_requirements(executable, requirements, options,
+                         cache_dir, environment):
     print_step("Installing requirements via " + pip_pypm_version(executable))
     if options:
         print_indent("Using options: " + options)
 
-    run(executable, "install", options,
-        download_cache=cache_dir,
-        requirement=requirements)
+    run(executable, "install",
+        options,
+        "--download-cache", cache_dir,
+        "--requirements", requirements,
+        "--user",
+        env=environment)
 
 
-def install_application(build_dir, cache_dir, python_dir):
+def install_application(build_dir, cache_dir, python_dir, environment):
     try:
         if exists(join(build_dir, "setup.py")):
             pip = join(python_dir, "pip")
             print_step(
                 "Installing application package via " + pip_pypm_version(pip))
 
-            run(pip, "install", environ.get('PIP_OPTS', ''),
-                download_cache=cache_dir,
-                editable=build_dir)
+            run(pip, "install",
+                environ.get('PIP_OPTS', ''),
+                "--download-cache", cache_dir,
+                "--editable", build_dir,
+                "--user",
+                env=environment)
         else:
             if exists(join(build_dir, "requirements.pypm")):
                 install_requirements(join(python_dir, "pypm"),
                                      "requirements.pypm",
                                      environ.get('PYPM_OPTS', ''),
-                                     cache_dir)
+                                     cache_dir,
+                                     environment)
 
             if exists(join(build_dir, "requirements.txt")):
                 install_requirements(join(python_dir, "pip"),
                                      "requirements.txt",
                                      environ.get('PIP_OPTS', ''),
-                                     cache_dir)
+                                     cache_dir,
+                                     environment)
     except CalledProcessError as error:
         print_warning("The installation failed:",
                       str(error))
@@ -104,16 +114,16 @@ def install_application(build_dir, cache_dir, python_dir):
         sys.exit(2)
 
 
-def build_runtime_environment(build_dir, python_dir, python_version):
+def build_runtime_environment(build_dir, python_dir, python_version, env):
     print_step("Building runtime environment")
     profile_d_dirname = join(build_dir, ".profile.d")
     mkdir(profile_d_dirname)
     with open(join(profile_d_dirname, "python.sh"), "w+") as f:
-        python_user_base = "/app/.python"
+
         f.write("export PYTHON_VERSION={}\n".format(python_version))
-        f.write('PATH="{}/bin:{}:$PATH"\n'.format(python_user_base,
+        f.write('PATH="{}/bin:{}:$PATH"\n'.format(env["PYTHONUSERBASE"],
                                                   python_dir))
-        f.write("export PYTHONUSERBASE={}\n".format(python_user_base))
+        f.write("export PYTHONUSERBASE={}\n".format(env["PYTHONUSERBASE"]))
         f.write("export PYTHONUNBUFFERED=True\n")
 
 
@@ -121,11 +131,14 @@ def main():
     build_dir = sys.argv[1]
     cache_dir = sys.argv[2]
 
+    env = copy(environ)
+    env["PYTHONUSERBASE"] = "/app/.python"
+
     python_dir, python_version = get_python(build_dir)
 
-    install_application(build_dir, cache_dir, python_dir)
+    install_application(build_dir, cache_dir, python_dir, env)
 
-    build_runtime_environment(build_dir, python_dir, python_version)
+    build_runtime_environment(build_dir, python_dir, python_version, env)
 
 
 if __name__ == "__main__":
