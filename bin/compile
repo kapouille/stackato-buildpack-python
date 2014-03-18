@@ -66,7 +66,7 @@ def pip_pypm_version(executable):
 
 
 def process_pypm_requirements(build_dir, cache_dir, environment):
-    requirements = join(build_dir, "requirements.txt")
+    requirements = join(build_dir, "requirements.pypm")
 
     if exists(requirements):
         print_step("Installing pypm requirements")
@@ -79,7 +79,6 @@ def process_pypm_requirements(build_dir, cache_dir, environment):
 
         run("pypm", "install",
             options,
-            "--download-cache", cache_dir,
             "--requirements", requirements,
             "--user",
             env=environment)
@@ -139,7 +138,7 @@ def install_application(build_dir, cache_dir, environment):
         if exists(join(build_dir, "setup.py")):
             print_step("Installing application")
             process_pip(pip, pip_opts, cache_dir, environment,
-                        "--editable " + build_dir)
+                        build_dir)
 
         print_step("Installed packages:")
         run(pip, "freeze")
