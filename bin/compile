@@ -81,8 +81,10 @@ def install_requirements(executable, requirements, options,
 
 def install_application(build_dir, cache_dir, python_dir, environment):
     try:
+        pip = join(python_dir, "pip")
+
         if exists(join(build_dir, "setup.py")):
-            pip = join(python_dir, "pip")
+
             print_step(
                 "Installing application package via " + pip_pypm_version(pip))
 
@@ -101,11 +103,20 @@ def install_application(build_dir, cache_dir, python_dir, environment):
                                      environment)
 
             if exists(join(build_dir, "requirements.txt")):
-                install_requirements(join(python_dir, "pip"),
+                install_requirements(pip,
                                      "requirements.txt",
                                      environ.get('PIP_OPTS', ''),
                                      cache_dir,
                                      environment)
+
+        print_step("Installed packages")
+        run(pip, "freeze")
+
+        print_step("Installed packages, user")
+        run(pip, "freeze",
+            "--user",
+            env=environment)
+
     except CalledProcessError as error:
         print_warning("The installation failed:",
                       str(error))
