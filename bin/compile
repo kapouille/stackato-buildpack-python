@@ -65,60 +65,84 @@ def pip_pypm_version(executable):
     return version[:version.find('\n')]
 
 
-def install_requirements(executable, requirements, options,
-                         cache_dir, environment):
-    print_step("Installing requirements via " + pip_pypm_version(executable))
-    if options:
-        print_indent("Using options: " + options)
+def process_pypm_requirements(build_dir, cache_dir, environment):
+    requirements = join(build_dir, "requirements.txt")
 
-    run(executable, "install",
-        options,
-        "--download-cache", cache_dir,
-        "--requirements", requirements,
-        "--user",
-        env=environment)
+    if exists(requirements):
+        print_step("Installing pypm requirements")
+
+        options = environ.get('PYPM_OPTS', '')
+
+        print_step("Installing requirements via " + pip_pypm_version("pypm"))
+        if options:
+            print_indent("Using options: " + options)
+
+        run("pypm", "install",
+            options,
+            "--download-cache", cache_dir,
+            "--requirements", requirements,
+            "--user",
+            env=environment)
 
 
-def install_application(build_dir, cache_dir, python_dir, environment):
+def process_pip(pip, pip_opts, cache_dir, environment, what):
+        print_step("Generating necessary wheel packages using " + pip_pypm_version(pip))
+        run(pip, "wheel",
+            pip_opts,
+            "--download-cache", cache_dir,
+            "--use-wheel",
+            "--find-links", cache_dir,
+            "--wheel-dir", cache_dir,
+            "--user",
+            what,
+            env=environment)
+
+        print_step("Installing requirements via " + pip_pypm_version(pip))
+        run(pip, "install",
+            pip_opts,
+            "--use-wheel",
+            "--no-index",
+            "--user",
+            "--find-links", cache_dir,
+            what,
+            env=environment)
+
+
+def install_application(build_dir, cache_dir, environment):
     try:
+        pip_opts = environ.get('PIP_OPTS', '')
         print_step("Upgrading pip")
         run("pip", "install",
-            environ.get('PIP_OPTS', ''),
+            pip_opts,
             "--download-cache", cache_dir,
             "--user",
             "--upgrade",
             "pip",
             env=environment)
-
         pip = join(environment["PYTHONUSERBASE"], "bin", "pip")
 
+        print_step("Installing wheel via " + pip_pypm_version(pip))
+        run(pip, "install",
+            pip_opts,
+            "--download-cache", cache_dir,
+            "--user",
+            "--upgrade",
+            "wheel",
+            env=environment)
+
+        requirements = join(build_dir, "requirements.txt")
+        if exists(requirements):
+            print_step("Installing pip requirements")
+            process_pip(pip, pip_opts, cache_dir, environment,
+                        "--requirements " + requirements)
+        process_pypm_requirements(build_dir, cache_dir, environment)
+
         if exists(join(build_dir, "setup.py")):
+            print_step("Installing application")
+            process_pip(pip, pip_opts, cache_dir, environment,
+                        "--editable " + build_dir)
 
-            print_step(
-                "Installing application package via " + pip_pypm_version(pip))
-
-            run(pip, "install",
-                environ.get('PIP_OPTS', ''),
-                "--download-cache", cache_dir,
-                "--editable", build_dir,
-                "--user",
-                env=environment)
-        else:
-            if exists(join(build_dir, "requirements.pypm")):
-                install_requirements("pypm",
-                                     "requirements.pypm",
-                                     environ.get('PYPM_OPTS', ''),
-                                     cache_dir,
-                                     environment)
-
-            if exists(join(build_dir, "requirements.txt")):
-                install_requirements(pip,
-                                     "requirements.txt",
-                                     environ.get('PIP_OPTS', ''),
-                                     cache_dir,
-                                     environment)
-
-        print_step("Installed packages")
+        print_step("Installed packages:")
         run(pip, "freeze")
 
     except CalledProcessError as error:
@@ -151,7 +175,7 @@ def main():
 
     python_dir, python_version = get_python(build_dir)
 
-    install_application(build_dir, cache_dir, python_dir, env)
+    install_application(build_dir, cache_dir, env)
 
     build_runtime_environment(build_dir, python_dir, python_version, env)
 
