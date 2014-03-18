@@ -83,6 +83,14 @@ def install_application(build_dir, cache_dir, python_dir, environment):
     try:
         pip = join(python_dir, "pip")
 
+        print_step("Upgrading pip")
+        run(pip, "install",
+            environ.get('PIP_OPTS', ''),
+            "--download-cache", cache_dir,
+            "--user",
+            "--upgrade",
+            env=environment)
+
         if exists(join(build_dir, "setup.py")):
 
             print_step(
