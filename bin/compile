@@ -112,11 +112,6 @@ def install_application(build_dir, cache_dir, python_dir, environment):
         print_step("Installed packages")
         run(pip, "freeze")
 
-        print_step("Installed packages, user")
-        run(pip, "freeze",
-            "--user",
-            env=environment)
-
     except CalledProcessError as error:
         print_warning("The installation failed:",
                       str(error))
