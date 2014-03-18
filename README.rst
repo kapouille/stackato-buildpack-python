@@ -71,3 +71,8 @@ When ``pip`` is used for install (in all cases apart from when providing a
 `python wheels <http://wheel.readthedocs.org/>`_ for all required packages. This means
 that packages that need long compilation times should be instantly installed on
 subsequent deployments, provided the cache wasn't cleared.
+
+Debugging support
+-----------------
+
+Additional debug logs can be enabled by setting the ``$BUILDPACK_DEBUG`` environment variable.
