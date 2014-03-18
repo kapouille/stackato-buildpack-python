@@ -90,7 +90,7 @@ def install_application(build_dir, cache_dir, python_dir, environment):
             "pip",
             env=environment)
 
-        pip = join(environment["PYTHONUSERBASE"], "pip")
+        pip = join(environment["PYTHONUSERBASE"], "bin", "pip")
 
         if exists(join(build_dir, "setup.py")):
 
