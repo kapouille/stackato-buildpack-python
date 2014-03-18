@@ -81,10 +81,8 @@ def install_requirements(executable, requirements, options,
 
 def install_application(build_dir, cache_dir, python_dir, environment):
     try:
-        pip = join(python_dir, "pip")
-
         print_step("Upgrading pip")
-        run(pip, "install",
+        run("pip", "install",
             environ.get('PIP_OPTS', ''),
             "--download-cache", cache_dir,
             "--user",
@@ -95,9 +93,9 @@ def install_application(build_dir, cache_dir, python_dir, environment):
         if exists(join(build_dir, "setup.py")):
 
             print_step(
-                "Installing application package via " + pip_pypm_version(pip))
+                "Installing application package via " + pip_pypm_version("pip"))
 
-            run(pip, "install",
+            run("pip", "install",
                 environ.get('PIP_OPTS', ''),
                 "--download-cache", cache_dir,
                 "--editable", build_dir,
@@ -105,14 +103,14 @@ def install_application(build_dir, cache_dir, python_dir, environment):
                 env=environment)
         else:
             if exists(join(build_dir, "requirements.pypm")):
-                install_requirements(join(python_dir, "pypm"),
+                install_requirements("pypm",
                                      "requirements.pypm",
                                      environ.get('PYPM_OPTS', ''),
                                      cache_dir,
                                      environment)
 
             if exists(join(build_dir, "requirements.txt")):
-                install_requirements(pip,
+                install_requirements("pip",
                                      "requirements.txt",
                                      environ.get('PIP_OPTS', ''),
                                      cache_dir,
