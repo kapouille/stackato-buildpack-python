@@ -1,7 +1,9 @@
+from os import environ
 from subprocess import Popen, PIPE
 from threading import Thread
 import sys
 
+_DEBUG = 'BUILDPACK_DEBUG' in environ
 
 class StreamLogger:
 
@@ -31,8 +33,14 @@ def print_step(*lines):
 
 
 def print_warning(*lines):
-    print " !     {}".format(lines[0])
-    print_indent(*(lines[1:]))
+    for line in lines:
+        print " !     {}".format(line)
+
+
+def print_debug(*lines):
+    if _DEBUG:
+        for line in lines:
+            print " *     {}".format(line)
 
 
 def run(exe, *args, **kwargs):
@@ -40,6 +48,8 @@ def run(exe, *args, **kwargs):
         exe,
         ' '.join(args)
     )
+
+    print_debug("Running " + command)
 
     process = Popen(command,
                     shell=True,
