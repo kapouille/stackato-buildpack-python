@@ -89,6 +89,7 @@ def install_application(build_dir, cache_dir, python_dir, environment):
             "--download-cache", cache_dir,
             "--user",
             "--upgrade",
+            "pip"
             env=environment)
 
         if exists(join(build_dir, "setup.py")):
