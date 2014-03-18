@@ -93,7 +93,6 @@ def process_pip(pip, pip_opts, cache_dir, environment, what):
             "--use-wheel",
             "--find-links", cache_dir,
             "--wheel-dir", cache_dir,
-            "--user",
             what,
             env=environment)
 
@@ -134,7 +133,7 @@ def install_application(build_dir, cache_dir, environment):
         if exists(requirements):
             print_step("Installing pip requirements")
             process_pip(pip, pip_opts, cache_dir, environment,
-                        "--requirements " + requirements)
+                        "-r " + requirements)
         process_pypm_requirements(build_dir, cache_dir, environment)
 
         if exists(join(build_dir, "setup.py")):
