@@ -100,6 +100,7 @@ def process_pip(pip, pip_opts, cache_dir, environment, what):
             pip_opts,
             "--use-wheel",
             "--no-index",
+            "--upgrade",
             "--user",
             "--find-links", cache_dir,
             what,
